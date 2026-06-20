@@ -1,0 +1,369 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -224,
+        32
+      ],
+      "id": "929ce0ee-ba85-45f4-870d-6818058c0df5",
+      "name": "Telegram Trigger",
+      "webhookId": "98d3b2cd-6592-47da-a252-08c0737e337a",
+      "credentials": {
+        "telegramApi": {
+          "id": "9valHC3hwZhCOFrH",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "entries",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "content": "={{ JSON.parse($('AI Agent').item.json.output).content }}",
+            "category": "={{ JSON.parse($('AI Agent').item.json.output).category }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "category",
+              "displayName": "category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "content",
+              "displayName": "content",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        848,
+        -160
+      ],
+      "id": "e8e82f98-4dd1-4100-aeca-221639dccfc0",
+      "name": "Insert rows in a table",
+      "credentials": {
+        "postgres": {
+          "id": "yR7w27dFY4McWY7Z",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Telegram Trigger').item.json.message.text }}",
+        "options": {
+          "systemMessage": "You are a personal second brain assistant. You handle two things:\n\n1. If the user wants to save a note, idea, task, or journal entry, respond with:\n{\"action\": \"save\", \"category\": \"task|idea|journal\", \"content\": \"clean version of the message\"}\n\n2. If the user wants to retrieve or see their notes (e.g. \"show me my notes\", \"what are my ideas\", \"return my tasks\"), respond with:\n{\"action\": \"retrieve\", \"filter\": \"all|task|idea|journal\"}\n\nUse \"filter\": \"all\" if they want everything, or the specific category if they mention one.\n\nRespond ONLY with a JSON object, nothing else."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        176,
+        64
+      ],
+      "id": "bfe433c7-b73e-4e6b-bdc6-1c66907f3ab8",
+      "name": "AI Agent",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        112,
+        352
+      ],
+      "id": "249ae16a-cb19-4be7-90e4-8064fcf1977f",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "UolXrunk3DENNcGK",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "8809935153",
+        "text": "=✅ Saved as *{{ JSON.parse($('AI Agent').item.json.output).category }}*: {{ JSON.parse($('AI Agent').item.json.output).content }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1264,
+        -16
+      ],
+      "id": "e87cd072-1f6b-4bd0-bad4-c8114066f469",
+      "name": "Send a text message",
+      "webhookId": "c7affdfb-2214-4b36-a161-b5171226904b",
+      "credentials": {
+        "telegramApi": {
+          "id": "9valHC3hwZhCOFrH",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "7cc63db3-6096-4acc-b0d5-7f29e5fc9cfe",
+              "leftValue": "={{ JSON.parse($('AI Agent').item.json.output).action }}",
+              "rightValue": "save",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        592,
+        -16
+      ],
+      "id": "2a4dd817-16f4-4cc2-a4f2-b534f2d2391c",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM entries \nWHERE ($1 = 'all' OR category = $1)\nORDER BY created_at DESC \nLIMIT 20",
+        "options": {
+          "queryReplacement": "={{ JSON.parse($('AI Agent').item.json.output).filter }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        848,
+        208
+      ],
+      "id": "89b7bbb1-8941-4ac1-991c-de8581bc47f1",
+      "name": "Execute a SQL query",
+      "credentials": {
+        "postgres": {
+          "id": "yR7w27dFY4McWY7Z",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "8809935153",
+        "text": "={{ $('Code in JavaScript').item.json.message}}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1360,
+        272
+      ],
+      "id": "dbdc475e-6f07-4b41-a353-dba7ea15c871",
+      "name": "Send a text message1",
+      "webhookId": "0198a218-15e7-4819-84d7-ef878de05b62",
+      "credentials": {
+        "telegramApi": {
+          "id": "9valHC3hwZhCOFrH",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = items.map(item => item.json);\n\nif (rows.length === 0) {\n  return [{ json: { message: \"📭 No notes found.\" } }];\n}\n\nconst formatted = rows.map(row => {\n  const emoji = row.category === 'task' ? '✅' : row.category === 'idea' ? '💡' : '📔';\n  return `${emoji} [${row.category.toUpperCase()}] ${row.content}`;\n}).join('\\n');\n\nconst message = `📓 *Your notes:*\\n\\n${formatted}`;\n\nreturn [{ json: { message } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1056,
+        208
+      ],
+      "id": "9411738c-94f4-41b9-9eb6-fcade977f452",
+      "name": "Code in JavaScript"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in a table": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message": {
+      "main": [
+        []
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "df1f46a0-1da2-4866-a02e-30e957234051",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b2aa7d6c97b19ebc07d5fe81f1aaf423f7c5479e7e7a1ec69d2c29c186541dd6"
+  },
+  "nodeGroups": [],
+  "id": "mTCrKogkwbHtf5xV",
+  "tags": []
+}
